@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cinema API — Painel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1c1c26;
+      --border: #2a2a3a;
+      --accent: #e8c84a;
+      --accent2: #ff6b35;
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+      --success: #4ade80;
+      --error: #f87171;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; }
+    .sidebar { width: 260px; min-height: 100vh; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; }
+    .logo { padding: 28px 24px 20px; border-bottom: 1px solid var(--border); }
+    .logo h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 3px; color: var(--accent); line-height: 1; }
+    .logo p { font-size: 0.7rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+    .nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+    .nav-section { font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 12px 12px 6px; }
+    .nav-btn { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 8px; border: none; background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.15s; width: 100%; text-align: left; }
+    .nav-btn:hover { background: var(--surface2); color: var(--text); }
+    .nav-btn.active { background: var(--accent); color: #0a0a0f; font-weight: 600; }
+    .nav-btn .icon { font-size: 1.1rem; width: 20px; text-align: center; }
+    .admin-only { display: none; }
+    .status-bar { padding: 16px; border-top: 1px solid var(--border); font-size: 0.78rem; }
+    .status-indicator { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+    .dot.online { background: var(--success); box-shadow: 0 0 6px var(--success); }
+    .dot.offline { background: var(--error); }
+    .main { margin-left: 260px; flex: 1; display: flex; flex-direction: column; }
+    .topbar { padding: 20px 32px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: space-between; }
+    .topbar h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 2px; color: var(--text); }
+    .user-badge { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; color: var(--muted); }
+    .user-badge span { color: var(--text); font-weight: 600; }
+    .admin-badge { background: rgba(232,200,74,0.15); color: var(--accent); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(232,200,74,0.3); display: none; }
+    .content { flex: 1; padding: 32px; overflow-y: auto; }
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; position: relative; overflow: hidden; }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .stat-card.yellow::before { background: var(--accent); }
+    .stat-card.orange::before { background: var(--accent2); }
+    .stat-card.green::before { background: var(--success); }
+    .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; color: var(--text); margin-top: 4px; line-height: 1; }
+    .stat-icon { position: absolute; right: 16px; top: 16px; font-size: 1.8rem; opacity: 0.15; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+    .form-card h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 2px; color: var(--accent); margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    input, select { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; transition: border-color 0.15s; outline: none; }
+    input:focus, select:focus { border-color: var(--accent); }
+    select option { background: var(--surface2); }
+    .btn { padding: 11px 22px; border-radius: 8px; border: none; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.15s; letter-spacing: 0.5px; }
+    .btn-primary { background: var(--accent); color: #0a0a0f; }
+    .btn-primary:hover { background: #f0d050; transform: translateY(-1px); }
+    .btn-danger { background: transparent; color: var(--error); border: 1px solid var(--error); font-size: 0.8rem; padding: 6px 12px; }
+    .btn-danger:hover { background: var(--error); color: #fff; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .table-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .table-header h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 2px; color: var(--text); }
+    table { width: 100%; border-collapse: collapse; }
+    th { padding: 12px 20px; text-align: left; font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; border-bottom: 1px solid var(--border); background: var(--surface2); }
+    td { padding: 14px 20px; font-size: 0.88rem; border-bottom: 1px solid var(--border); color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .badge-green { background: rgba(74,222,128,0.15); color: var(--success); }
+    .badge-orange { background: rgba(255,107,53,0.15); color: var(--accent2); }
+    .badge-yellow { background: rgba(232,200,74,0.15); color: var(--accent); }
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.4; }
+    #toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 20px; border-radius: 10px; font-size: 0.88rem; font-weight: 500; display: none; z-index: 999; max-width: 320px; animation: slideUp 0.2s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    #toast.success { background: rgba(74,222,128,0.15); border: 1px solid var(--success); color: var(--success); }
+    #toast.error { background: rgba(248,113,113,0.15); border: 1px solid var(--error); color: var(--error); }
+    #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 100%; max-width: 420px; }
+    .login-box h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; letter-spacing: 4px; color: var(--accent); margin-bottom: 4px; }
+    .login-box p { color: var(--muted); font-size: 0.88rem; margin-bottom: 24px; }
+    .api-url-row { display: flex; gap: 8px; margin-bottom: 20px; }
+    .api-url-row input { flex: 1; font-size: 0.82rem; }
+    .api-url-row .btn { padding: 10px 14px; font-size: 0.8rem; white-space: nowrap; }
+    .tabs { display: flex; gap: 4px; background: var(--surface2); border-radius: 10px; padding: 4px; margin-bottom: 24px; }
+    .tab-btn { flex: 1; padding: 9px; border-radius: 7px; border: none; background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .tab-btn.active { background: var(--accent); color: #0a0a0f; }
+    .login-form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .login-box .btn-primary { width: 100%; padding: 13px; font-size: 1rem; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>🎬 CINEMA</h1>
+    <p>Painel Administrativo</p>
+    <div class="login-form-group">
+      <label>URL da API</label>
+      <div class="api-url-row">
+        <input type="text" id="api-url" value="http://localhost:8000" />
+        <button class="btn btn-secondary" onclick="testConnection()">Testar</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Entrar</button>
+      <button class="tab-btn" id="tab-register" onclick="switchTab('register')">Criar conta</button>
+    </div>
+    <div id="form-login">
+      <div class="login-form-group"><label>Email</label><input type="email" id="login-email" placeholder="seu@email.com" /></div>
+      <div class="login-form-group"><label>Senha</label><input type="password" id="login-password" placeholder="••••••••" /></div>
+      <button class="btn btn-primary" onclick="doLogin()">Entrar</button>
+    </div>
+    <div id="form-register" style="display:none;">
+      <div class="login-form-group"><label>Email</label><input type="email" id="reg-email" placeholder="seu@email.com" /></div>
+      <div class="login-form-group"><label>Senha</label><input type="password" id="reg-password" placeholder="••••••••" /></div>
+      <div class="login-form-group"><label>Confirmar Senha</label><input type="password" id="reg-password2" placeholder="••••••••" /></div>
+      <button class="btn btn-primary" onclick="doRegister()">Criar Conta</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <h1>🎬 Cinema</h1>
+    <p>Painel Administrativo</p>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Geral</div>
+    <button class="nav-btn active" onclick="showSection('dashboard', this)"><span class="icon">📊</span> Dashboard</button>
+
+    <div class="nav-section admin-only">Administração</div>
+    <button class="nav-btn admin-only" onclick="showSection('filmes', this)"><span class="icon">🎥</span> Filmes</button>
+    <button class="nav-btn admin-only" onclick="showSection('sessoes', this)"><span class="icon">🕐</span> Sessões</button>
+
+    <div class="nav-section">Área do Usuário</div>
+    <button class="nav-btn" onclick="showSection('reservas', this)"><span class="icon">🎟️</span> Minhas Reservas</button>
+    <button class="nav-btn" onclick="showSection('sessoes-usuario', this)"><span class="icon">🎞️</span> Ver Sessões</button>
+
+    <div class="nav-section">Conta</div>
+    <button class="nav-btn" onclick="doLogout()"><span class="icon">🚪</span> Sair</button>
+  </nav>
+  <div class="status-bar">
+    <div class="status-indicator">
+      <div class="dot" id="status-dot"></div>
+      <span id="status-text">Verificando...</span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <h2 id="page-title">Dashboard</h2>
+    <div class="user-badge">
+      👤 <span id="user-email">—</span>
+      <span class="admin-badge" id="admin-badge">👑 ADMIN</span>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="section-dashboard">
+      <div class="cards-grid">
+        <div class="stat-card yellow"><div class="stat-icon">🎥</div><div class="stat-label">Filmes</div><div class="stat-value" id="count-movies">—</div></div>
+        <div class="stat-card orange"><div class="stat-icon">🕐</div><div class="stat-label">Sessões</div><div class="stat-value" id="count-sessions">—</div></div>
+        <div class="stat-card green"><div class="stat-icon">🎟️</div><div class="stat-label">Minhas Reservas</div><div class="stat-value" id="count-reservations">—</div></div>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><h3>Próximas Sessões</h3></div>
+        <table><thead><tr><th>Filme</th><th>Sala</th><th>Data/Hora</th><th>Vagas</th><th>Preço</th></tr></thead><tbody id="dashboard-sessions"></tbody></table>
+      </div>
+    </div>
+
+    <!-- FILMES (admin) -->
+    <div class="section" id="section-filmes">
+      <div class="form-card">
+        <h3>➕ Novo Filme</h3>
+        <div class="form-row">
+          <div class="form-group"><label>Título</label><input type="text" id="f-title" placeholder="Ex: Inception" /></div>
+          <div class="form-group"><label>Gênero</label><input type="text" id="f-genre" placeholder="Ex: Ficção científica" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Duração (minutos)</label><input type="number" id="f-duration" placeholder="Ex: 148" /></div>
+          <div class="form-group"><label>Descrição</label><input type="text" id="f-description" placeholder="Breve descrição..." /></div>
+        </div>
+        <button class="btn btn-primary" onclick="createMovie()">Cadastrar Filme</button>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><h3>Filmes Cadastrados</h3><button class="btn btn-secondary" onclick="loadMovies()" style="font-size:0.8rem;padding:7px 14px;">🔄 Atualizar</button></div>
+        <table><thead><tr><th>ID</th><th>Título</th><th>Gênero</th><th>Duração</th><th>Ação</th></tr></thead><tbody id="table-filmes"></tbody></table>
+      </div>
+    </div>
+
+    <!-- SESSÕES (admin) -->
+    <div class="section" id="section-sessoes">
+      <div class="form-card">
+        <h3>➕ Nova Sessão</h3>
+        <div class="form-row">
+          <div class="form-group"><label>Filme</label><select id="s-movie"><option value="">Selecione um filme...</option></select></div>
+          <div class="form-group"><label>Sala</label><input type="text" id="s-room" placeholder="Ex: Sala 1" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Data e Hora</label><input type="datetime-local" id="s-datetime" /></div>
+          <div class="form-group"><label>Total de Assentos</label><input type="number" id="s-seats" value="50" /></div>
+          <div class="form-group"><label>Preço (R$)</label><input type="number" id="s-price" placeholder="Ex: 25.00" step="0.01" /></div>
+        </div>
+        <button class="btn btn-primary" onclick="createSession()">Criar Sessão</button>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><h3>Sessões Cadastradas</h3><button class="btn btn-secondary" onclick="loadSessions()" style="font-size:0.8rem;padding:7px 14px;">🔄 Atualizar</button></div>
+        <table><thead><tr><th>ID</th><th>Filme</th><th>Sala</th><th>Data/Hora</th><th>Vagas</th><th>Preço</th><th>Ação</th></tr></thead><tbody id="table-sessoes"></tbody></table>
+      </div>
+    </div>
+
+    <!-- SESSÕES (usuário - só visualização) -->
+    <div class="section" id="section-sessoes-usuario">
+      <div class="table-card">
+        <div class="table-header"><h3>Sessões Disponíveis</h3><button class="btn btn-secondary" onclick="loadSessions()" style="font-size:0.8rem;padding:7px 14px;">🔄 Atualizar</button></div>
+        <table><thead><tr><th>Filme</th><th>Sala</th><th>Data/Hora</th><th>Vagas</th><th>Preço</th></tr></thead><tbody id="table-sessoes-usuario"></tbody></table>
+      </div>
+    </div>
+
+    <!-- RESERVAS -->
+    <div class="section" id="section-reservas">
+      <div class="form-card">
+        <h3>➕ Nova Reserva</h3>
+        <div class="form-row">
+          <div class="form-group"><label>Sessão</label><select id="r-session"><option value="">Selecione uma sessão...</option></select></div>
+          <div class="form-group"><label>Número do Assento</label><input type="number" id="r-seat" placeholder="Ex: 12" min="1" /></div>
+        </div>
+        <button class="btn btn-primary" onclick="createReservation()">Reservar Assento</button>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><h3>Minhas Reservas</h3><button class="btn btn-secondary" onclick="loadReservations()" style="font-size:0.8rem;padding:7px 14px;">🔄 Atualizar</button></div>
+        <table><thead><tr><th>ID</th><th>Sessão</th><th>Assento</th><th>Data da Reserva</th><th>Ação</th></tr></thead><tbody id="table-reservas"></tbody></table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+  let TOKEN = '';
+  let IS_ADMIN = false;
+  let MOVIES = [];
+  let SESSIONS = [];
+
+  function api() { return document.getElementById('api-url').value.replace(/\/$/, ''); }
+
+  function toast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = type;
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3500);
+  }
+
+  function switchTab(tab) {
+    document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  }
+
+  function applyAdminUI() {
+    // Mostra ou esconde elementos admin
+    document.querySelectorAll('.admin-only').forEach(el => {
+      el.style.display = IS_ADMIN ? (el.classList.contains('nav-btn') ? 'flex' : 'block') : 'none';
+    });
+    // Mostra badge de admin no topbar
+    document.getElementById('admin-badge').style.display = IS_ADMIN ? 'inline-block' : 'none';
+  }
+
+  async function testConnection() {
+    try {
+      const r = await fetch(api() + '/');
+      if (r.ok) toast('✅ API conectada com sucesso!', 'success');
+      else toast('⚠️ API respondeu com erro', 'error');
+    } catch { toast('❌ Não foi possível conectar à API', 'error'); }
+  }
+
+  async function doLogin() {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-password').value;
+    if (!email || !pass) return toast('Preencha email e senha', 'error');
+    try {
+      const r = await fetch(api() + '/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass })
+      });
+      const data = await r.json();
+      if (!r.ok) return toast(data.detail || 'Erro ao fazer login', 'error');
+      TOKEN = data.access_token;
+      document.getElementById('user-email').textContent = email;
+      document.getElementById('login-screen').style.display = 'none';
+
+      // Busca perfil para saber se é admin
+      const meR = await fetch(api() + '/auth/me', { headers: authHeaders() });
+      const meData = await meR.json();
+      IS_ADMIN = meData.is_admin || false;
+      applyAdminUI();
+
+      checkStatus();
+      loadAll();
+      toast('✅ Login realizado com sucesso!');
+    } catch { toast('❌ Erro ao conectar à API', 'error'); }
+  }
+
+  async function doRegister() {
+    const email = document.getElementById('reg-email').value;
+    const pass = document.getElementById('reg-password').value;
+    const pass2 = document.getElementById('reg-password2').value;
+    if (!email || !pass || !pass2) return toast('Preencha todos os campos', 'error');
+    if (pass !== pass2) return toast('As senhas não coincidem', 'error');
+    try {
+      const r = await fetch(api() + '/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass })
+      });
+      const data = await r.json();
+      if (!r.ok) return toast(data.detail || 'Erro ao criar conta', 'error');
+      toast('✅ Conta criada! Faça login agora.');
+      document.getElementById('reg-email').value = '';
+      document.getElementById('reg-password').value = '';
+      document.getElementById('reg-password2').value = '';
+      switchTab('login');
+    } catch { toast('❌ Erro ao conectar à API', 'error'); }
+  }
+
+  function doLogout() {
+    TOKEN = '';
+    IS_ADMIN = false;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+    switchTab('login');
+  }
+
+  async function checkStatus() {
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-text');
+    try {
+      const r = await fetch(api() + '/');
+      dot.className = r.ok ? 'dot online' : 'dot offline';
+      txt.textContent = r.ok ? 'API online' : 'API offline';
+    } catch { dot.className = 'dot offline'; txt.textContent = 'API offline'; }
+  }
+
+  function authHeaders() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN }; }
+
+  function showSection(name, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('section-' + name).classList.add('active');
+    btn.classList.add('active');
+    const titles = { dashboard: 'Dashboard', filmes: 'Filmes', sessoes: 'Sessões', reservas: 'Minhas Reservas', 'sessoes-usuario': 'Ver Sessões' };
+    document.getElementById('page-title').textContent = titles[name] || name;
+    if (name === 'sessoes') loadMoviesForSelect();
+    if (name === 'reservas') loadSessionsForSelect();
+  }
+
+  async function loadAll() { await loadMovies(); await loadSessions(); await loadReservations(); }
+
+  async function loadMovies() {
+    try {
+      const r = await fetch(api() + '/movies/', { headers: authHeaders() });
+      MOVIES = await r.json();
+      const tbody = document.getElementById('table-filmes');
+      if (!MOVIES.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🎥</div><p>Nenhum filme cadastrado ainda</p></div></td></tr>'; document.getElementById('count-movies').textContent = '0'; return; }
+      tbody.innerHTML = MOVIES.map(m => `<tr><td><span class="badge badge-yellow">#${m.id}</span></td><td><strong>${m.title}</strong></td><td>${m.genre || '—'}</td><td>${m.duration_minutes} min</td><td>${IS_ADMIN ? `<button class="btn btn-danger" onclick="deleteMovie(${m.id})">🗑 Remover</button>` : '—'}</td></tr>`).join('');
+      document.getElementById('count-movies').textContent = MOVIES.length;
+    } catch { toast('Erro ao carregar filmes', 'error'); }
+  }
+
+  async function loadSessions() {
+    try {
+      const r = await fetch(api() + '/sessions/', { headers: authHeaders() });
+      SESSIONS = await r.json();
+      const tbody = document.getElementById('table-sessoes');
+      const tbodyUser = document.getElementById('table-sessoes-usuario');
+      const dashTbody = document.getElementById('dashboard-sessions');
+      const fmt = (dt) => new Date(dt).toLocaleString('pt-BR');
+      const getTitle = (id) => { const m = MOVIES.find(m => m.id === id); return m ? m.title : 'Filme #' + id; };
+      if (!SESSIONS.length) {
+        const empty = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🕐</div><p>Nenhuma sessão cadastrada ainda</p></div></td></tr>';
+        tbody.innerHTML = empty;
+        tbodyUser.innerHTML = empty;
+        dashTbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🕐</div><p>Nenhuma sessão</p></div></td></tr>';
+        document.getElementById('count-sessions').textContent = '0';
+        return;
+      }
+      tbody.innerHTML = SESSIONS.map(s => `<tr><td><span class="badge badge-yellow">#${s.id}</span></td><td>${getTitle(s.movie_id)}</td><td>${s.room}</td><td>${fmt(s.datetime)}</td><td><span class="badge ${s.available_seats > 0 ? 'badge-green' : 'badge-orange'}">${s.available_seats}/${s.total_seats}</span></td><td>R$ ${Number(s.price).toFixed(2)}</td><td><button class="btn btn-danger" onclick="deleteSession(${s.id})">🗑 Remover</button></td></tr>`).join('');
+      tbodyUser.innerHTML = SESSIONS.map(s => `<tr><td>${getTitle(s.movie_id)}</td><td>${s.room}</td><td>${fmt(s.datetime)}</td><td><span class="badge ${s.available_seats > 0 ? 'badge-green' : 'badge-orange'}">${s.available_seats}/${s.total_seats}</span></td><td>R$ ${Number(s.price).toFixed(2)}</td></tr>`).join('');
+      dashTbody.innerHTML = SESSIONS.slice(0, 5).map(s => `<tr><td><strong>${getTitle(s.movie_id)}</strong></td><td>${s.room}</td><td>${fmt(s.datetime)}</td><td><span class="badge ${s.available_seats > 0 ? 'badge-green' : 'badge-orange'}">${s.available_seats} vagas</span></td><td>R$ ${Number(s.price).toFixed(2)}</td></tr>`).join('');
+      document.getElementById('count-sessions').textContent = SESSIONS.length;
+    } catch { toast('Erro ao carregar sessões', 'error'); }
+  }
+
+  async function loadReservations() {
+    try {
+      const r = await fetch(api() + '/reservations/', { headers: authHeaders() });
+      const reservations = await r.json();
+      const tbody = document.getElementById('table-reservas');
+      const fmt = (dt) => new Date(dt).toLocaleString('pt-BR');
+      if (!reservations.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🎟️</div><p>Você ainda não tem reservas</p></div></td></tr>'; document.getElementById('count-reservations').textContent = '0'; return; }
+      tbody.innerHTML = reservations.map(rv => `<tr><td><span class="badge badge-yellow">#${rv.id}</span></td><td>Sessão #${rv.session_id}</td><td><span class="badge badge-green">Assento ${rv.seat_number}</span></td><td>${fmt(rv.created_at)}</td><td><button class="btn btn-danger" onclick="cancelReservation(${rv.id})">❌ Cancelar</button></td></tr>`).join('');
+      document.getElementById('count-reservations').textContent = reservations.length;
+    } catch { toast('Erro ao carregar reservas', 'error'); }
+  }
+
+  function loadMoviesForSelect() {
+    document.getElementById('s-movie').innerHTML = '<option value="">Selecione um filme...</option>' + MOVIES.map(m => `<option value="${m.id}">${m.title}</option>`).join('');
+  }
+
+  function loadSessionsForSelect() {
+    document.getElementById('r-session').innerHTML = '<option value="">Selecione uma sessão...</option>' + SESSIONS.map(s => { const m = MOVIES.find(m => m.id === s.movie_id); return `<option value="${s.id}">${m ? m.title : 'Filme #' + s.movie_id} — ${s.room} — ${new Date(s.datetime).toLocaleString('pt-BR')}</option>`; }).join('');
+  }
+
+  async function createMovie() {
+    const title = document.getElementById('f-title').value;
+    const genre = document.getElementById('f-genre').value;
+    const duration = document.getElementById('f-duration').value;
+    const description = document.getElementById('f-description').value;
+    if (!title || !duration) return toast('Título e duração são obrigatórios', 'error');
+    try {
+      const r = await fetch(api() + '/movies/', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ title, genre, duration_minutes: parseInt(duration), description }) });
+      const data = await r.json();
+      if (!r.ok) return toast(data.detail || 'Erro ao cadastrar filme', 'error');
+      toast('✅ Filme cadastrado!');
+      ['f-title','f-genre','f-duration','f-description'].forEach(id => document.getElementById(id).value = '');
+      loadMovies();
+    } catch { toast('Erro ao cadastrar filme', 'error'); }
+  }
+
+  async function deleteMovie(id) {
+    if (!confirm('Remover este filme?')) return;
+    try {
+      const r = await fetch(api() + '/movies/' + id, { method: 'DELETE', headers: authHeaders() });
+      if (r.status === 204) { toast('✅ Filme removido!'); loadMovies(); }
+      else { const d = await r.json(); toast(d.detail || 'Erro ao remover', 'error'); }
+    } catch { toast('Erro ao remover filme', 'error'); }
+  }
+
+  async function createSession() {
+    const movie_id = document.getElementById('s-movie').value;
+    const room = document.getElementById('s-room').value;
+    const datetime = document.getElementById('s-datetime').value;
+    const total_seats = document.getElementById('s-seats').value;
+    const price = document.getElementById('s-price').value;
+    if (!movie_id || !room || !datetime || !price) return toast('Preencha todos os campos', 'error');
+    try {
+      const r = await fetch(api() + '/sessions/', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ movie_id: parseInt(movie_id), room, datetime, total_seats: parseInt(total_seats), price: parseFloat(price) }) });
+      const data = await r.json();
+      if (!r.ok) return toast(data.detail || 'Erro ao criar sessão', 'error');
+      toast('✅ Sessão criada!');
+      ['s-room','s-datetime','s-price'].forEach(id => document.getElementById(id).value = '');
+      loadSessions();
+    } catch { toast('Erro ao criar sessão', 'error'); }
+  }
+
+  async function deleteSession(id) {
+    if (!confirm('Remover esta sessão?')) return;
+    try {
+      const r = await fetch(api() + '/sessions/' + id, { method: 'DELETE', headers: authHeaders() });
+      if (r.status === 204) { toast('✅ Sessão removida!'); loadSessions(); }
+      else { const d = await r.json(); toast(d.detail || 'Erro ao remover', 'error'); }
+    } catch { toast('Erro ao remover sessão', 'error'); }
+  }
+
+  async function createReservation() {
+    const session_id = document.getElementById('r-session').value;
+    const seat_number = document.getElementById('r-seat').value;
+    if (!session_id || !seat_number) return toast('Selecione a sessão e o assento', 'error');
+    try {
+      const r = await fetch(api() + '/reservations/', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ session_id: parseInt(session_id), seat_number: parseInt(seat_number) }) });
+      const data = await r.json();
+      if (!r.ok) return toast(data.detail || 'Erro ao reservar', 'error');
+      toast('✅ Assento reservado!');
+      document.getElementById('r-seat').value = '';
+      loadReservations();
+    } catch { toast('Erro ao fazer reserva', 'error'); }
+  }
+
+  async function cancelReservation(id) {
+    if (!confirm('Cancelar esta reserva?')) return;
+    try {
+      const r = await fetch(api() + '/reservations/' + id, { method: 'DELETE', headers: authHeaders() });
+      if (r.status === 204) { toast('✅ Reserva cancelada!'); loadReservations(); }
+      else { const d = await r.json(); toast(d.detail || 'Erro ao cancelar', 'error'); }
+    } catch { toast('Erro ao cancelar reserva', 'error'); }
+  }
+
+  checkStatus();
+  setInterval(checkStatus, 30000);
+</script>
+</body>
+</html>
