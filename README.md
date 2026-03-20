@@ -1,183 +1,78 @@
-# 🎬 Cinema API
+# Cinema API
 
-API REST para gerenciamento de um sistema de cinema, desenvolvida com **Python**, **FastAPI** e **MySQL**.
+API REST para gerenciamento de um sistema de cinema, desenvolvida como projeto de estudo e portfólio.
 
-## 📋 Funcionalidades
-
-- Autenticação de usuários com JWT
-- Cadastro e listagem de filmes
-- Criação e gerenciamento de sessões com controle de vagas
-- Reserva e cancelamento de assentos
-- Controle de acesso por perfil (admin / usuário comum)
+Desenvolvida por **Thiago Machado** — Junho/2024
 
 ---
 
-## 🛠️ Tecnologias
+## Sobre o projeto
 
-- [Python 3.11+](https://www.python.org/)
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [SQLAlchemy](https://www.sqlalchemy.org/)
-- [MySQL](https://www.mysql.com/)
-- [JWT (python-jose)](https://github.com/mpdavis/python-jose)
-- [Passlib + bcrypt](https://passlib.readthedocs.io/)
+Esse projeto nasceu com o objetivo de praticar desenvolvimento backend com Python e FastAPI. A ideia foi criar algo funcional do zero: autenticação de usuários, cadastro de filmes, sessões com controle de vagas e reserva de assentos.
 
----
+Junto com a API, também desenvolvi um painel web simples em HTML puro para facilitar o uso sem precisar do Swagger.
 
-## 📁 Estrutura do Projeto
+## Tecnologias usadas
 
-```
-cinema-api/
-├── app/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── database.py
-│   ├── models.py
-│   ├── schemas.py
-│   └── routes/
-│       ├── __init__.py
-│       ├── auth.py
-│       ├── movies.py
-│       ├── sessions.py
-│       └── reservations.py
-├── .env
-├── .env.example
-├── .gitignore
-├── requirements.txt
-└── README.md
-```
+- Python + FastAPI
+- MySQL + SQLAlchemy
+- JWT para autenticação
+- Passlib + bcrypt para hash de senhas
+- HTML/CSS/JS puro no painel
 
----
+## Como rodar
 
-## ⚙️ Configuração
-
-### 1. Clone o repositório
+**Pré-requisitos:** Python 3.10+, MySQL instalado
 
 ```bash
-git clone https://github.com/seu-usuario/cinema-api.git
+# Clone o repositório
+git clone https://github.com/thiagomachado747/cinema-api.git
 cd cinema-api
-```
 
-### 2. Crie o ambiente virtual
-
-```bash
+# Crie e ative o ambiente virtual
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-```
+venv\Scripts\activate  # Windows
+source venv/bin/activate  # Linux/Mac
 
-### 3. Instale as dependências
-
-```bash
+# Instale as dependências
 pip install -r requirements.txt
 ```
 
-### 4. Configure as variáveis de ambiente
-
-Crie um arquivo `.env` baseado no `.env.example`:
+Crie um banco de dados MySQL chamado `cinema_db` e configure o arquivo `.env` baseado no `.env.example`:
 
 ```env
-DATABASE_URL=mysql+pymysql://usuario:senha@localhost:3306/cinema_db
-SECRET_KEY=sua_chave_secreta_aqui
+DATABASE_URL=mysql+pymysql://root:sua_senha@localhost:3306/cinema_db
+SECRET_KEY=sua_chave_secreta
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
-### 5. Crie o banco de dados no MySQL
-
-```sql
-CREATE DATABASE cinema_db;
-```
-
-### 6. Rode a aplicação
-
 ```bash
+# Rode a API
 uvicorn app.main:app --reload
 ```
 
-A API estará disponível em: `http://localhost:8000`
+Acesse a documentação em: `http://localhost:8000/docs`
 
-Documentação interativa: `http://localhost:8000/docs`
+Para usar o painel, abra o arquivo `painel.html` diretamente no navegador com a API rodando.
 
----
+## Endpoints
 
-## 🔚 Endpoints
+| Método | Rota | Acesso |
+|--------|------|--------|
+| POST | `/auth/register` | Público |
+| POST | `/auth/login` | Público |
+| GET | `/movies/` | Público |
+| POST | `/movies/` | Admin |
+| DELETE | `/movies/{id}` | Admin |
+| GET | `/sessions/` | Público |
+| POST | `/sessions/` | Admin |
+| DELETE | `/sessions/{id}` | Admin |
+| GET | `/reservations/` | Autenticado |
+| POST | `/reservations/` | Autenticado |
+| DELETE | `/reservations/{id}` | Autenticado |
 
-### Auth
-| Método | Rota | Acesso | Descrição |
-|--------|------|--------|-----------|
-| POST | `/auth/register` | Público | Cadastrar usuário |
-| POST | `/auth/login` | Público | Login e geração de token |
+## Observações
 
-### Filmes
-| Método | Rota | Acesso | Descrição |
-|--------|------|--------|-----------|
-| GET | `/movies/` | Público | Listar todos os filmes |
-| GET | `/movies/{id}` | Público | Detalhe de um filme |
-| POST | `/movies/` | Admin | Cadastrar filme |
-| DELETE | `/movies/{id}` | Admin | Remover filme |
-
-### Sessões
-| Método | Rota | Acesso | Descrição |
-|--------|------|--------|-----------|
-| GET | `/sessions/` | Público | Listar sessões com vagas disponíveis |
-| GET | `/sessions/{id}` | Público | Detalhe de uma sessão |
-| POST | `/sessions/` | Admin | Criar sessão |
-| DELETE | `/sessions/{id}` | Admin | Remover sessão |
-
-### Reservas
-| Método | Rota | Acesso | Descrição |
-|--------|------|--------|-----------|
-| GET | `/reservations/` | Autenticado | Listar minhas reservas |
-| POST | `/reservations/` | Autenticado | Fazer uma reserva |
-| DELETE | `/reservations/{id}` | Autenticado | Cancelar uma reserva |
-
----
-
-## 🔐 Autenticação
-
-A API utiliza **JWT Bearer Token**. Após o login, inclua o token no header das requisições protegidas:
-
-```
-Authorization: Bearer <seu_token>
-```
-
----
-
-## 👑 Como criar um usuário admin
-
-Após registrar um usuário normalmente, atualize diretamente no banco:
-
-```sql
-UPDATE users SET is_admin = 1 WHERE email = 'seu@email.com';
-```
-
----
-
-## 💡 Exemplo de uso
-
-### 1. Registrar usuário
-```bash
-curl -X POST http://localhost:8000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@email.com", "password": "123456"}'
-```
-
-### 2. Fazer login
-```bash
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@email.com", "password": "123456"}'
-```
-
-### 3. Fazer uma reserva (com token)
-```bash
-curl -X POST http://localhost:8000/reservations/ \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{"session_id": 1, "seat_number": 12}'
-```
-
----
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+- Para virar admin, atualize diretamente no banco: `UPDATE users SET is_admin = 1 WHERE email = 'seu@email.com';`
+- O arquivo `.env` não é enviado ao repositório por segurança
